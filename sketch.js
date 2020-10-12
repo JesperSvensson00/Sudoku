@@ -2,18 +2,18 @@
  *	Bättre sudd icon
  *  Undo funktion
  * 	Snyggare knappar
+ *  Bugg testa
+ * 	Snygga upp koden
+ * 
  */
 
-var gameWidth = 495;
-// const gameWidth = 360;
+var gameWidth = 522;
 var cellSize = gameWidth / 9;
 var xoffset = cellSize * 1.5;
 var yoffset = cellSize * 1.5;
 var pointer;
 
-// const digit_col = [ digit_col ];
 let background_col = [ 248, 248, 255 ];
-// let digit_col = [ 52, 72, 107 ];
 let digit_col = [ 65, 111, 191 ];
 let solid_digit_col = [ 51, 51, 51 ];
 let wrong_digit_col = [ 220, 20, 60 ];
@@ -28,6 +28,7 @@ let selected_info_col = [ 10, 200, 10 ];
 //Game
 var grid = [];
 var selectedNumber = 1;
+var prevSelectedNumber = 1;
 var selectedNote = true;
 var noteMode = false;
 var cellMode = false;
@@ -43,12 +44,15 @@ var difficulty_sel;
 var restart_btn;
 var newGame_btn;
 
-function preload() {
-	pointer = loadImage('/pointer.png');
-}
+var phoneMode = true;
+
+var dataLoaded = false;
 
 function setup() {
 	frameRate(5);
+	pointer = loadImage('/pointer.png', () => {
+		dataLoaded = true;
+	});
 	document.addEventListener('contextmenu', (event) => event.preventDefault());
 	for (let x = 0; x < 9; x++) {
 		grid[x] = [];
@@ -90,6 +94,70 @@ function setup() {
 	restart_btn.parent('sketchHolder');
 
 	restart(true, difficulty_sel.value().toLowerCase());
+	windowResized();
+}
+
+function sliderResize() {
+	updateSize(sliderSize.value() - sliderSize.value() % 9);
+}
+
+function updateSize() {
+	if (phoneMode) {
+		xoffset = 4;
+		cellSize = floor((displayWidth - xoffset * 2) / 9);
+		xoffset = (displayWidth - cellSize * 9) / 2;
+		gameWidth = cellSize * 9;
+		yoffset = 5;
+		resizeCanvas(xoffset * 2 + gameWidth, yoffset * 2 + cellSize * 14);
+
+		difficulty_sel.position(xoffset + cellSize * 4, yoffset + cellSize * 13);
+		difficulty_sel.size(cellSize * 2, cellSize / 2);
+
+		newGame_btn.position(xoffset + cellSize * 4, yoffset + cellSize * 12);
+		newGame_btn.size(cellSize * 2, cellSize);
+
+		restart_btn.position(xoffset + cellSize * 7, yoffset + cellSize * 12);
+		restart_btn.size(cellSize * 2, cellSize);
+		document.getElementById('sketchHolder').style.width = '100%';
+		document.getElementById('sketchHolder').style.height = '100%';
+		document.getElementById('sketchHolder').style.background = 'rgb(248, 248, 255)';
+		document.getElementById('sketchHolder').style.marginTop = 'none';
+		document.getElementsByTagName('canvas')[0].style.borderRadius = 'none';
+		document.getElementsByTagName('canvas')[0].style.boxShadow = 'none';
+		cellMode = true;
+	} else {
+		let w = floor(windowWidth / 2.2);
+		gameWidth = floor(w) - floor(w) % 9;
+		cellSize = gameWidth / 9;
+		xoffset = cellSize * 1.5;
+		yoffset = cellSize * 1.5;
+		resizeCanvas(xoffset * 2 + cellSize * 13, yoffset * 2 + cellSize * 9);
+
+		difficulty_sel.position(xoffset + gameWidth + cellSize, yoffset + cellSize * 8);
+		difficulty_sel.size(cellSize * 1.5, cellSize / 2);
+
+		newGame_btn.position(xoffset + gameWidth + cellSize, yoffset + cellSize * 7);
+		newGame_btn.size(cellSize * 1.5, cellSize);
+
+		restart_btn.position(xoffset + gameWidth + cellSize * 2.5, yoffset + cellSize * 7);
+		restart_btn.size(cellSize * 1.5, cellSize);
+		document.getElementById('sketchHolder').style.width = width + 'px';
+		document.getElementById('sketchHolder').style.height = height + 'px';
+		document.getElementById('sketchHolder').style.backgroundColor = 'none';
+		document.getElementById('sketchHolder').style.marginTop = '3%';
+		document.getElementsByTagName('canvas')[0].style.borderRadius = '10px';
+		document.getElementsByTagName('canvas')[0].style.boxShadow = '0px 0px 11px 5px rgba(0,0,0,0.23)';
+	}
+}
+
+function windowResized() {
+	if (windowWidth / windowHeight < 1) {
+		console.log('Phone');
+		phoneMode = true;
+	} else {
+		phoneMode = false;
+	}
+	updateSize();
 }
 
 function draw() {
@@ -185,13 +253,17 @@ function draw() {
 
 	drawGrid();
 	drawNumbers();
-	drawInfo();
+	phoneMode ? drawInfoPhone() : drawInfo();
 
 	//Chages the framerate
-	if (inGameWindow() || inNumberSelection() || inSettings()) {
-		frameRate(30);
+	if (!phoneMode) {
+		if (inGameWindow() || inNumberSelection() || inSettings()) {
+			frameRate(30);
+		} else {
+			frameRate(5);
+		}
 	} else {
-		// frameRate(5);
+		frameRate(20);
 	}
 }
 
@@ -211,8 +283,10 @@ function drawGrid() {
 		rect((k % 3) * cellSize * 3 + xoffset, floor(k / 3) * cellSize * 3 + yoffset, cellSize * 3, cellSize * 3);
 	}
 
-	strokeWeight(3);
-	rect(xoffset, yoffset, cellSize * 9, cellSize * 9);
+	if (!phoneMode) {
+		strokeWeight(2);
+		rect(xoffset, yoffset, cellSize * 9, cellSize * 9);
+	}
 }
 
 function drawNumbers() {
@@ -298,6 +372,7 @@ function drawInfo() {
 		let y = floor(i / 3);
 		noFill();
 		stroke(line_col);
+		strokeWeight(2);
 		rect(startX + cellSize * x, yoffset + cellSize * y, cellSize, cellSize);
 		noStroke();
 		fill(line_col);
@@ -309,13 +384,84 @@ function drawInfo() {
 		textAlign(CENTER);
 		textSize(cellSize * 0.6);
 	}
-	strokeWeight(3);
-	noFill();
-	stroke(line_col);
-	rect(startX, yoffset, cellSize * 3, cellSize * 3);
 
 	//Meny
 	//Ritar ramarna
+	noFill();
+	stroke(line_col);
+	for (let i = 0; i < 6; i++) {
+		rect(startX + cellSize * (i % 3), menuY + cellSize * floor(i / 3), cellSize, cellSize);
+	}
+
+	fill(wrong_highlight_col);
+	stroke(line_col);
+	strokeWeight(2);
+	rectMode(CENTER);
+	rect(startX + cellSize / 2, menuY + 1.5 * cellSize, cellSize * 0.7, cellSize * 0.7);
+	rectMode(CORNER);
+
+	fill(wrong_digit_col);
+	noStroke();
+	textSize(cellSize * 0.6 * 0.7);
+	text('1', startX + 0.5 * cellSize, menuY + 1.5 * cellSize + 1); //Show wrong
+	textSize(cellSize * 0.6);
+
+	if (dataLoaded) {
+		image(pointer, startX + cellSize, menuY, cellSize, cellSize); //Ritar cell icon
+	}
+	fill(line_col);
+	text('🖉', xoffset + gameWidth + 1.5 * cellSize, menuY + cellSize / 2 + 3); //Ritar noterings icon
+	text('\uD83D\uDCA1', startX + 1.5 * cellSize, menuY + 1.5 * cellSize + 3); //Ritar sudd icon
+	text('\u232B', startX + 2.5 * cellSize, menuY + cellSize / 2 + 3); //Ritar sudd icon
+	text('\u27F2', startX + 2.5 * cellSize, menuY + 1.5 * cellSize + 3); //Ångra icon // ⟲ ↺ ⤺
+}
+
+function drawInfoPhone() {
+	textSize(cellSize * 0.6);
+	let startX = xoffset;
+	let menuY = yoffset + gameWidth + cellSize * 3;
+
+	noStroke();
+	fill(highlight_col);
+	if (noteMode) {
+		rect(startX, menuY, cellSize, cellSize);
+	}
+	if (cellMode) {
+		rect(startX + cellSize, menuY, cellSize, cellSize);
+	}
+
+	if (showWrong) {
+		rect(startX, menuY + cellSize, cellSize, cellSize);
+	}
+	if (highlightMode) {
+		rect(startX + cellSize, menuY + cellSize, cellSize, cellSize);
+	}
+
+	//Ritar siffer menyn
+	if (selectedNumber == null) {
+		rect(startX + cellSize * 2, menuY, cellSize, cellSize);
+	} else {
+		rect(startX + cellSize * (selectedNumber - 1), menuY - cellSize * 2, cellSize, cellSize);
+	}
+
+	for (let x = 0; x < 9; x++) {
+		let y = menuY - cellSize * 2;
+		noFill();
+		stroke(line_col);
+		rect(startX + cellSize * x, y, cellSize, cellSize);
+		noStroke();
+		fill(line_col);
+		textSize(floor(cellSize * 0.7));
+		text(x + 1, startX + cellSize * x + cellSize / 2, y + cellSize / 2 + 1);
+		textAlign(RIGHT);
+		textSize(cellSize * 0.22);
+		let number = numberOfNumbers[x] <= 9 ? 9 - numberOfNumbers[x] : 0;
+		text(number, startX + cellSize * x + cellSize / 1.1, y + cellSize / 1.3 + 3);
+		textAlign(CENTER);
+	}
+	textSize(cellSize * 0.6);
+
+	//Ritar ramarna för menyn
 	for (let i = 0; i < 6; i++) {
 		noFill();
 		stroke(line_col);
@@ -324,7 +470,7 @@ function drawInfo() {
 		fill(line_col);
 		switch (i) {
 			case 0:
-				text('🖉', xoffset + gameWidth + 1.5 * cellSize, menuY + cellSize / 2 + 3); //Ritar noterings icon
+				text('🖉', startX + 0.5 * cellSize, menuY + cellSize / 2 + 3); //Ritar noterings icon
 				break;
 			case 1:
 				image(pointer, startX + cellSize, menuY, cellSize, cellSize); //Ritar cell icon
@@ -342,7 +488,6 @@ function drawInfo() {
 				rectMode(CENTER);
 				rect(startX + cellSize / 2, menuY + 1.5 * cellSize, cellSize * 0.7, cellSize * 0.7);
 				rectMode(CORNER);
-				strokeWeight(3);
 
 				fill(wrong_digit_col);
 				noStroke();
@@ -354,27 +499,6 @@ function drawInfo() {
 				text('\u27F2', startX + 2.5 * cellSize, menuY + 1.5 * cellSize + 3); //Ångra icon // ⟲ ↺ ⤺
 				break;
 		}
-	}
-
-	//Ritar en grön markering över de valda rutorna
-	noFill();
-	stroke(selected_info_col);
-	noStroke();
-	if (noteMode) {
-		rect(startX, menuY, cellSize, cellSize);
-	}
-	if (cellMode) {
-		rect(startX + cellSize, menuY, cellSize, cellSize);
-	}
-	if (selectedNumber == null) {
-		rect(startX + cellSize * 2, menuY, cellSize, cellSize);
-	} else {
-		rect(
-			startX + cellSize * ((selectedNumber - 1) % 3),
-			yoffset + cellSize * floor((selectedNumber - 1) / 3),
-			cellSize,
-			cellSize
-		);
 	}
 }
 
@@ -419,14 +543,24 @@ function keyPressed() {
 		checkGrid();
 	} else if (keyCode == 46 || keyCode == 48 || keyCode == 96 || keyCode == 8) {
 		//0 eller del är ta bort
+		prevSelectedNumber = selectedNumber;
 		selectedNumber = null;
-		grid[selectedCell.x][selectedCell.y].value = null;
-		clearNote(selectedCell.x, selectedCell.y);
-		checkGrid();
+		if (selectedCell.x !== null) {
+			grid[selectedCell.x][selectedCell.y].value = null;
+			clearNote(selectedCell.x, selectedCell.y);
+			checkGrid();
+		}
 	} else if (keyCode == 32 || keyCode == 13) {
 		//Space eller enter
-		grid[selectedCell.x][selectedCell.y].value = selectedNumber;
-		checkGrid();
+		if (selectedCell.x !== null) {
+			grid[selectedCell.x][selectedCell.y].value = selectedNumber;
+			checkGrid();
+		}
+	} else if (keyCode == 78) {
+		frameRate(20);
+		noteMode = !noteMode;
+	} else if (keyCode == 222) {
+		phoneMode = !phoneMode;
 	} else {
 		console.log('Keycode is: ' + keyCode);
 	}
@@ -473,8 +607,15 @@ function touchEnded() {
 		selectedCell = { x: cellX, y: cellY };
 		checkGrid();
 	} else if (inNumberSelection()) {
-		let cellX = floor((mouseX - xoffset - cellSize * 10) / cellSize);
-		let cellY = floor((mouseY - yoffset) / cellSize);
+		let cellX = null;
+		let cellY = null;
+		if (phoneMode) {
+			cellX = floor((mouseX - xoffset) / cellSize);
+			cellY = 0;
+		} else {
+			cellX = floor((mouseX - xoffset - cellSize * 10) / cellSize);
+			cellY = floor((mouseY - yoffset) / cellSize);
+		}
 
 		selectedNumber = 1 + cellX + 3 * cellY;
 		if (selectedCell.x !== null) {
@@ -491,8 +632,15 @@ function touchEnded() {
 		lastCell = { x: null, y: null };
 		checkGrid();
 	} else if (inSettings()) {
-		let cellX = floor((mouseX - xoffset - cellSize * 10) / cellSize);
-		let cellY = floor((mouseY - yoffset) / cellSize) - 4;
+		let cellX = null;
+		let cellY = null;
+		if (phoneMode) {
+			cellX = floor((mouseX - xoffset) / cellSize);
+			cellY = floor((mouseY - yoffset - cellSize * 8) / cellSize) - 4;
+		} else {
+			cellX = floor((mouseX - xoffset - cellSize * 10) / cellSize);
+			cellY = floor((mouseY - yoffset) / cellSize) - 4;
+		}
 		if (cellY == 0) {
 			switch (cellX) {
 				case 0:
@@ -502,7 +650,12 @@ function touchEnded() {
 					cellMode = !cellMode;
 					break;
 				case 2:
-					selectedNumber = null;
+					if (selectedNumber === null) {
+						selectedNumber = prevSelectedNumber;
+					} else {
+						prevSelectedNumber = selectedNumber;
+						selectedNumber = null;
+					}
 					break;
 			}
 		} else if (cellY == 1) {
@@ -528,12 +681,10 @@ function touchEnded() {
 }
 
 function touchStarted() {
-	if (inRange(mouseX, xoffset, gameWidth + xoffset - 1)) {
-		if (inRange(mouseY, yoffset, gameWidth + yoffset - 1)) {
-			let cellX = floor((mouseX - xoffset) / cellSize);
-			let cellY = floor((mouseY - yoffset) / cellSize);
-			selectedNote = !grid[cellX][cellY].notes[selectedNumber - 1];
-		}
+	if (inGameWindow()) {
+		let cellX = floor((mouseX - xoffset) / cellSize);
+		let cellY = floor((mouseY - yoffset) / cellSize);
+		selectedNote = !grid[cellX][cellY].notes[selectedNumber - 1];
 	}
 }
 
@@ -550,6 +701,7 @@ function mouseWheel(e) {
 		idx = 9;
 	}
 	selectedNumber = idx;
+	frameRate(20);
 }
 
 function clearNote(cellX, cellY) {
@@ -572,20 +724,38 @@ function inGameWindow() {
 }
 
 function inNumberSelection() {
-	if (inRange(mouseX, xoffset + 10 * cellSize, xoffset + 13 * cellSize)) {
-		if (inRange(mouseY, yoffset, yoffset + 3 * cellSize)) {
-			return true;
+	if (phoneMode) {
+		if (inRange(mouseX, xoffset, xoffset + 9 * cellSize)) {
+			if (inRange(mouseY, yoffset + cellSize * 10, yoffset + 11 * cellSize)) {
+				return true;
+			}
+		}
+	} else {
+		if (inRange(mouseX, xoffset + 10 * cellSize, xoffset + 13 * cellSize)) {
+			if (inRange(mouseY, yoffset, yoffset + 3 * cellSize)) {
+				return true;
+			}
 		}
 	}
+
 	return false;
 }
 
 function inSettings() {
-	if (inRange(mouseX, xoffset + 10 * cellSize, xoffset + 13 * cellSize)) {
-		if (inRange(mouseY, yoffset + 4 * cellSize, yoffset + 6 * cellSize)) {
-			return true;
+	if (phoneMode) {
+		if (inRange(mouseX, xoffset, xoffset + 3 * cellSize)) {
+			if (inRange(mouseY, yoffset + 12 * cellSize, yoffset + 14 * cellSize)) {
+				return true;
+			}
+		}
+	} else {
+		if (inRange(mouseX, xoffset + 10 * cellSize, xoffset + 13 * cellSize)) {
+			if (inRange(mouseY, yoffset + 4 * cellSize, yoffset + 6 * cellSize)) {
+				return true;
+			}
 		}
 	}
+
 	return false;
 }
 

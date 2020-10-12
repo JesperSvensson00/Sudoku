@@ -5,7 +5,6 @@
   <meta charset="utf-8">
   <script src="p5.min.js"></script>
   <script src="p5.dom.min.js"></script>
-  <!-- <script src="p5.sound.min.js"></script> -->
   <script src="sudoku.js"></script>
   <script src="sketch.js"></script>
 </head>
@@ -14,23 +13,19 @@
     body{
       /* background-color: ghostwhite; */
       background-color: rgb(0, 191, 255);
-      overscroll-behavior-y: contain;
-      overflow: hidden;
+      overscroll-behavior-y: initial;
+      overflow-y: hidden;
+      margin: 0px;
     }
     canvas{
-      /* margin-top: 3%; */
-      /* margin-left: 3%; */
-      border: none 2px none;
       border-radius: 10px;
       box-shadow: 0px 0px 11px 5px rgba(0,0,0,0.23);
-      cursor: default;
     }
 
     #sketchHolder {
       width: 880px;
       height: 714px;
       margin: auto;
-      margin-top: 3%;
       position: relative;
     }
   </style>
